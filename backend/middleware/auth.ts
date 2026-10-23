@@ -1,4 +1,3 @@
-import { empty } from "./../generated/prisma/internal/prismaNamespace";
 import { NextFunction, Request, Response } from "express";
 import { createRemoteJWKSet, jwtVerify } from "jose";
 import { prisma } from "../config/prisma.js";
@@ -51,7 +50,7 @@ export const verifyAuthToken = async (token: string): Promise<AuthUser | null> =
         const effectiveEmail = u?.email || userEmail;
         const store = await prisma.stores.findFirst({ where: { merchant_id: effectiveId } });
         let role: "admin" | "merchant" | "customer" = "customer";
-        if (u?.role === "admin" || payload.role === "admin" || effectiveEmail.includes("admin@")) {
+        if (u?.role === "admin" || payload.role === "admin") {
             role = "admin";
         } else if (store || u?.role === "merchant" || payload.role === "merchant") {
             role = "merchant";
@@ -59,6 +58,7 @@ export const verifyAuthToken = async (token: string): Promise<AuthUser | null> =
         return{
             id:effectiveId,
             name:effectiveName,
+            email:effectiveEmail,
             role,
             store_id:role==="admin"?null : store?.id || null
         }
@@ -102,7 +102,7 @@ next()
 }
 
 
-export const requireRole=async(roles:Array<"admin" | "merchant" | "customer">)=>{
+export const requireRole=(roles:Array<"admin" | "merchant" | "customer">)=>{
 
 return(req:AuthenticatedRequest,res:Response,next:NextFunction):void=>{
 if(!req.user || !roles.includes(req.user.role)){
