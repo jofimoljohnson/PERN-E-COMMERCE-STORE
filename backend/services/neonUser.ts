@@ -9,7 +9,7 @@ export interface NeonUserRecord{
 
 
 }
-export const findNeonUser=async(filter:{id?:string;email?:string}):Promise<NeonUserRecord | null>{
+export const findNeonUser=async(filter:{id?:string;email?:string}):Promise<NeonUserRecord | null>=>{
     try {
         if(filter.id){
             const rows=await prisma.$queryRaw<NeonUserRecord[]>`
