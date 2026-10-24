@@ -1,6 +1,7 @@
 import { NextFunction, Request, Response } from "express";
 import { createRemoteJWKSet, jwtVerify } from "jose";
 import { prisma } from "../config/prisma.js";
+import { findNeonUser } from "../services/neonUser.js";
 
 export interface AuthUser {
     id: string;
@@ -30,6 +31,9 @@ try {
     console.warn("Neon Auth JWKS initialization warning", e);
 }
 
+
+
+
 // verifies autnetication token using Neon Auth JWKS (jose jwtVerify)
 
 export const verifyAuthToken = async (token: string): Promise<AuthUser | null> => {
@@ -55,60 +59,64 @@ export const verifyAuthToken = async (token: string): Promise<AuthUser | null> =
         } else if (store || u?.role === "merchant" || payload.role === "merchant") {
             role = "merchant";
         }
-        return{
-            id:effectiveId,
-            name:effectiveName,
-            email:effectiveEmail,
+        return {
+            id: effectiveId,
+            name: effectiveName,
+            email: effectiveEmail,
             role,
-            store_id:role==="admin"?null : store?.id || null
-        }
+            store_id: role === "admin" ? null : store?.id || null,
+        };
     } catch (error) {
-        return null
+        return null;
     }
 };
 
 
-export const requiredAuth=async(req:AuthenticatedRequest,res:Response,next:NextFunction):Promise<void>=>{
-    const authHeader=req.headers.authorization;
-    if(!authHeader || !authHeader.startsWith("Bearer ")){
-        res.status(401).json({success:false,message:"Unauthorized:No token provided"})
-        return 
+
+
+export const requiredAuth = async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+        res.status(401).json({ success: false, message: "Unauthorized:No token provided" });
+        return;
     }
-    const token=authHeader.split(" ")[1]
-    const user=await verifyAuthToken(token)
-    if(!user){
-             res.status(401).json({success:false,message:"Unauthorized:Invalid or expired token"})
-             return
-   
+    const token = authHeader.split(" ")[1];
+    const user = await verifyAuthToken(token);
+    if (!user) {
+        res.status(401).json({ success: false, message: "Unauthorized:Invalid or expired token" });
+        return;
     }
-    req.user=user 
-    next()
+    req.user = user;
+    next();
+};
 
-}
 
 
-export const optionalAuth=async(req:AuthenticatedRequest,_res:Response,next:NextFunction):Promise<void>=>{
-   
-const authHeader=req.headers.authorization;
-if(authHeader && authHeader.startsWith("Bearer ")){
-    const token=authHeader.split(" ")[1]
-    const user=await verifyAuthToken(token)
-    if(user){
-        req.user=user 
+
+export const optionalAuth = async (req: AuthenticatedRequest, _res: Response, next: NextFunction): Promise<void> => {
+    const authHeader = req.headers.authorization;
+    if (authHeader && authHeader.startsWith("Bearer ")) {
+        const token = authHeader.split(" ")[1];
+        const user = await verifyAuthToken(token);
+        if (user) {
+            req.user = user;
+        }
     }
-} 
-next()
-
-}
+    next();
+};
 
 
-export const requireRole=(roles:Array<"admin" | "merchant" | "customer">)=>{
 
-return(req:AuthenticatedRequest,res:Response,next:NextFunction):void=>{
-if(!req.user || !roles.includes(req.user.role)){
-   res.status(403).json({success:false,message:"Forbidden:Access denied"})
-   return;  
-}
-next()
-}
-}
+
+export const requireRole = (roles: Array<"admin" | "merchant" | "customer">) => {
+    return (req: AuthenticatedRequest, res: Response, next: NextFunction): void => {
+        if (!req.user || !roles.includes(req.user.role)) {
+            res.status(403).json({ success: false, message: "Forbidden:Access denied" });
+            return;
+        }
+        next();
+    };
+};
+
+
+

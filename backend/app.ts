@@ -1,6 +1,7 @@
 import 'dotenv/config'
 import express, {Request,Response} from 'express'
 import cors from 'cors'
+import categoryRouter from './routes/categoryRoutes.js'
 
 
 const app=express()
@@ -11,6 +12,10 @@ const port=process.env.PORT || 5000
 app.get('/',(req:Request,res:Response)=>{
     res.send("Server is live")
 })
+
+// Api routes
+app.use("/api/categories",categoryRouter)
+
 
 app.listen(port,()=>{
     console.log(`Server is running at http://localhost:${port}`)
